@@ -1,0 +1,45 @@
+{
+    "name": "copy-editor",
+    "sideEffects": false,
+    "version": "0.0.1",
+    "description": "Toy app to transform text into a predetermined JSON format",
+    "main": "./index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "watch": "webpack --watch --config webpack/dev.config.js",
+        "start": "webpack-dev-server --open --config webpack/dev.config.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com:kairuiwang/copy-editor.git"
+    },
+    "author": "Glen Wang",
+    "devDependencies": {
+        "@babel/core": "^7.10.2",
+        "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+        "@babel/plugin-transform-runtime": "^7.10.1",
+        "@babel/preset-env": "^7.10.2",
+        "@babel/preset-flow": "^7.10.1",
+        "@babel/preset-react": "^7.10.1",
+        "@types/react": "^16.9.35",
+        "babel-loader": "^8.1.0",
+        "babel-plugin-styled-components": "^1.10.7",
+        "flow-bin": "^0.102.0",
+        "html-webpack-plugin": "^3.2.0",
+        "terser-webpack-plugin": "^1.4.3",
+        "webpack": "^4.43.0",
+        "webpack-cli": "^3.3.11",
+        "webpack-dev-server": "^3.11.0",
+        "webpack-merge": "^4.2.2"
+    },
+    "dependencies": {
+        "@babel/runtime": "^7.10.2",
+        "package.json": "^2.0.1",
+        "react": "^16.13.1",
+        "react-contenteditable": "^3.3.5",
+        "react-dom": "^16.13.1",
+        "react-html-parser": "^2.0.2",
+        "react-json-pretty": "^2.2.0",
+        "styled-components": "^4.4.1"
+    }
+}
