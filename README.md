@@ -79,3 +79,9 @@ and visit
 ```
 http://localhost:8000/
 ```
+
+## To submit
+
+Please fork this repository and develop on your fork. To submit, please email me with a link to the forked repo. You can open a PR on your fork with your submission.
+
+Thank you for participating in this challenge!
