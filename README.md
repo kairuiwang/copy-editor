@@ -80,8 +80,35 @@ and visit
 http://localhost:8000/
 ```
 
-## To submit
+## My approach
 
-Please fork this repository and develop on your fork. To submit, please email me with a link to the forked repo. You can open a PR on your fork with your submission.
+### To make sure every each object contains a paragraph:
+```
+1. Create a paragraphs variable, in each element saves texts within the same paragraph.
+2. Loop through the tags, whenenver encounters a block element(paragraph), increases index value before and after.
+3. Get rid of empty elements in paragraphs array.
+```
 
-Thank you for participating in this challenge!
+### To make sure font style correct:
+There are three factors that affect font-weight and font-style: 
+- style from parent tag
+- style applied to current tag
+- tagName(b,i,strong,em)
+```
+const getFontStyle = (baseStyle, curStyle, tagName) => {
+  ...
+  if(isBold && !isItalic)
+      return 'bold';
+  if(isBold && isItalic)
+      return 'bold-italic';
+  if(!isBold && isItalic)
+      return 'italic';
+  if(!isBold && !isItalic)
+      return 'normal';
+}
+```
+
+## Limitations
+- handling of br tag : not sure if I should see it as a start of paragraph a not
+- missing handling of initial style
+- isBlock function still needs to improve
