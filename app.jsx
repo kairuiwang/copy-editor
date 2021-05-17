@@ -11,69 +11,75 @@ import styled from "styled-components";
 
 import Colors from "./constants/colors";
 import Spacing from "./constants/spacing";
+import { BASE_STYLES, TAG_STYLES } from "./constants/styles";
 
-const parseNodes = (nodes, baseStyle = "normal") => {
+const getInlineStyle = (inlineStyle) => {
+    const isItalic = !!inlineStyle.match(/italic/);
+    const isBold = !!inlineStyle.match(/weight: 600|700|bold/);
+
+    let style = [];
+    if (isItalic) {
+        style = [...style, BASE_STYLES.ITALIC];
+    }
+    if (isBold) {
+        style = [...style, BASE_STYLES.BOLD];
+    }
+    
+    return style.length > 0 ? style : [];
+}
+
+const getStyle = ({name, attribs}) => {
+    const tagStyles = (name && TAG_STYLES[name] && [TAG_STYLES[name]]) || [];
+    const inlineStyles = (attribs && attribs.style && getInlineStyle(attribs.style)) || [];
+    const aggregatedStyles = [...tagStyles, ...inlineStyles];
+    return aggregatedStyles.length > 0 ? aggregatedStyles : [BASE_STYLES.NORMAL];
+}
+
+const parseNodes = (nodes, el) => {
     let parsed = [];
     for (const node of nodes) {
-        const { attribs, children, data, name } = node;
-        if (!name) {
+        const { children, data, parent } = node;
+
+        let elementStyle;
+        if (!el) {
+            elementStyle = new Set(getStyle(parent));
+        } else {
+            getStyle(parent).forEach(style => el.add(style));
+            elementStyle = el;
+        } 
+
+        if (data) {
+            if (elementStyle.has(BASE_STYLES.BOLD) || elementStyle.has(BASE_STYLES.ITALIC)) {
+                elementStyle.delete(BASE_STYLES.NORMAL);
+            };
+
             parsed = parsed.concat({
-                style: baseStyle,
+                style: Array.from(elementStyle),
                 content: data,
             });
-        } else if (name === "b") {
-            parsed = parsed.concat(
-                parseNodes(
-                    children,
-                    baseStyle === "italic" ? "bold-italic" : "bold"
-                )
-            );
-        } else if (name === "i") {
-            parsed = parsed.concat(
-                parseNodes(
-                    children,
-                    baseStyle === "bold" ? "bold-italic" : "italic"
-                )
-            );
-        } else if (name === "span") {
-            const { style } = attribs;
-            // The detection of attributes here might be too specific. Is this
-            // really the best way to do this?
-            const isItalic = !!style.match(/italic/);
-            const isBold = !!style.match(/weight:600/);
-            if (isItalic && !isBold) {
-                parsed = parsed.concat(parseNodes(children, "italic"));
-            } else if (!isItalic && isBold) {
-                parsed = parsed.concat(parseNodes(children, "bold"));
-            } else if (isItalic && isBold) {
-                parsed = parsed.concat(parseNodes(children, "bold-italic"));
-            } else {
-                parsed = parsed.concat(parseNodes(children, "normal"));
-            }
-        }
+        } else {
+            parsed = parsed.concat(parseNodes(children, elementStyle));
+        };
     }
     return parsed;
-};
+}
 
 const parseHtml = (html) =>
     ReactHtmlParser(html, {
         transform: (node, i) => {
-            const { children, name, parent } = node;
-            if (!parent && name === "div") {
-                const parsed = parseNodes(children);
-                return parsed.length > 0
-                    ? {
-                          content: parsed,
-                      }
-                    : null;
-            } else {
-                return null;
-            }
+            const { children } = node;
+            const parsed = parseNodes(children);
+
+            return parsed.length > 0
+                ? {
+                        content: parsed,
+                    }
+                : null;
         },
     }).filter((node) => !!node);
 
 const App = () => {
-    const [html, setHtml] = React.useState("<div>Edit text here.</div>");
+    const [html, setHtml] = React.useState(`<div>Enter your text here</div>`);
     const [parsed, setParsed] = React.useState(parseHtml(html));
 
     const handleChange = (e) => {

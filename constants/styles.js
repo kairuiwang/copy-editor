@@ -1,0 +1,28 @@
+export const BASE_STYLES = {
+  NORMAL: "NORMAL",
+  BOLD: "BOLD",
+  ITALIC: "ITALIC",
+  H1: "H1",
+  H2: "H2",
+  H3: "H3",
+  H4: "H4",
+  H5: "H5",
+  CODE: "CODE",
+  LIST: "LIST",
+  HYPERLINK: "HYPERLINK",
+}
+
+export const TAG_STYLES = {
+  b: BASE_STYLES.BOLD,
+  strong: BASE_STYLES.BOLD,
+  i: BASE_STYLES.ITALIC,
+  em: BASE_STYLES.ITALIC,
+  a: BASE_STYLES.HYPERLINK,
+  h1: BASE_STYLES.H1,
+  h2: BASE_STYLES.H2,
+  h3: BASE_STYLES.H3,
+  h4: BASE_STYLES.H4,
+  h5: BASE_STYLES.H5,
+  code: BASE_STYLES.CODE,
+  li: BASE_STYLES.LIST,
+}
