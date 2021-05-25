@@ -12,44 +12,69 @@ import styled from "styled-components";
 import Colors from "./constants/colors";
 import Spacing from "./constants/spacing";
 
-const parseNodes = (nodes, baseStyle = "normal") => {
+const labelStyle = ({ bold, italic }) => {
+    if (bold && italic) return "bold-italic";
+    else if (bold) return "bold";
+    else if (italic) return "italic";
+    else return "normal";
+};
+
+const contentsAreItalic = (node, startsItalic) => {
+    const { attribs, name } = node;
+    const style = attribs && attribs.style;
+    const styledItalic = !!(style && style.match(/style:italic/));
+    const styledNormal = !!(style && style.match(/style:normal/));
+    const italicElements = ["i", "em"]
+
+    // explicit style attrib (either italic or normal) overrides default
+    // element style of current node, or any style inherited from a parent
+    if (styledItalic) return true;
+    else if (styledNormal) return false;
+
+    // if no explicit style, check if we're in a default-italic element
+    else if (italicElements.includes(name)) return true;
+
+    // if neither, inherit style from parent
+    else return startsItalic;
+};
+
+const contentsAreBold = (node, startsBold) => {
+    const { attribs, name } = node;
+    const style = attribs && attribs.style;
+    // consider weights 500-1000 bold, as well as "bold" and "bolder" keywords
+    const weightedBold = !!(style && style.match(/weight:([5-9][0-9][0-9]|1000|bold)/));
+
+    // consider weights 100-499 normal, as well as "normal" and "lighter" keywords
+    // technically weights 1-99 are valid, but I'm ignoring them for now because they make
+    // the style parsing more complex and I've never actually seen them used in the wild
+    const weightedNormal = !!(style && style.match(/weight:([1-4][0-9][0-9]|normal|lighter)/));
+    const boldElements = ["b", "strong", "h1", "h2", "h3", "h4", "h5", "h6", "th"];
+
+    if (weightedBold) return true;
+    else if (weightedNormal) return false;
+    else if (boldElements.includes(name)) return true;
+    else return startsBold;
+};
+
+const parseNodes = (nodes, appliedStyle = { bold: false, italic: false }) => {
     let parsed = [];
     for (const node of nodes) {
-        const { attribs, children, data, name } = node;
-        if (!name) {
-            parsed = parsed.concat({
-                style: baseStyle,
-                content: data,
-            });
-        } else if (name === "b") {
-            parsed = parsed.concat(
-                parseNodes(
-                    children,
-                    baseStyle === "italic" ? "bold-italic" : "bold"
-                )
-            );
-        } else if (name === "i") {
-            parsed = parsed.concat(
-                parseNodes(
-                    children,
-                    baseStyle === "bold" ? "bold-italic" : "italic"
-                )
-            );
-        } else if (name === "span") {
-            const { style } = attribs;
-            // The detection of attributes here might be too specific. Is this
-            // really the best way to do this?
-            const isItalic = !!style.match(/italic/);
-            const isBold = !!style.match(/weight:600/);
-            if (isItalic && !isBold) {
-                parsed = parsed.concat(parseNodes(children, "italic"));
-            } else if (!isItalic && isBold) {
-                parsed = parsed.concat(parseNodes(children, "bold"));
-            } else if (isItalic && isBold) {
-                parsed = parsed.concat(parseNodes(children, "bold-italic"));
-            } else {
-                parsed = parsed.concat(parseNodes(children, "normal"));
+        const { children, data } = node;
+        const newStyle = {
+            italic: contentsAreItalic(node, appliedStyle.italic),
+            bold: contentsAreBold(node, appliedStyle.bold),
+        };
+
+        if (data) {
+            const trimmedContent = data.trim();
+            if (!!trimmedContent) {
+                parsed = parsed.concat({
+                    style: labelStyle(newStyle),
+                    content: trimmedContent,
+                });
             }
+        } else if (children) {
+            parsed = parsed.concat(parseNodes(children, newStyle));
         }
     }
     return parsed;
@@ -58,17 +83,12 @@ const parseNodes = (nodes, baseStyle = "normal") => {
 const parseHtml = (html) =>
     ReactHtmlParser(html, {
         transform: (node, i) => {
-            const { children, name, parent } = node;
-            if (!parent && name === "div") {
-                const parsed = parseNodes(children);
-                return parsed.length > 0
-                    ? {
-                          content: parsed,
-                      }
-                    : null;
-            } else {
-                return null;
-            }
+            const parsed = parseNodes([node]);
+            return parsed.length > 0
+                ? {
+                        content: parsed,
+                    }
+                : null;
         },
     }).filter((node) => !!node);
 
