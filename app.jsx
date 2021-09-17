@@ -14,8 +14,11 @@ import Spacing from "./constants/spacing";
 
 const parseNodes = (nodes, baseStyle = "normal") => {
     let parsed = [];
+
     for (const node of nodes) {
         const { attribs, children, data, name } = node;
+        console.log(node)
+    
         if (!name) {
             parsed = parsed.concat({
                 style: baseStyle,
@@ -35,22 +38,106 @@ const parseNodes = (nodes, baseStyle = "normal") => {
                     baseStyle === "bold" ? "bold-italic" : "italic"
                 )
             );
-        } else if (name === "span") {
-            const { style } = attribs;
-            // The detection of attributes here might be too specific. Is this
-            // really the best way to do this?
-            const isItalic = !!style.match(/italic/);
-            const isBold = !!style.match(/weight:600/);
-            if (isItalic && !isBold) {
-                parsed = parsed.concat(parseNodes(children, "italic"));
-            } else if (!isItalic && isBold) {
-                parsed = parsed.concat(parseNodes(children, "bold"));
-            } else if (isItalic && isBold) {
-                parsed = parsed.concat(parseNodes(children, "bold-italic"));
-            } else {
-                parsed = parsed.concat(parseNodes(children, "normal"));
+        } else  {
+            //by removing the span requirement we can account for all other tags to keep
+            //Titles (h1 h2 etc) are currently unhandled because I was unsure how to definitively recognize them
+            //if we wanted, we could add logic to recognize them as bold automatically 
+            //the application from breaking the parsed chain when unidentified text
+            //is used. Otherwise when an H2 or other type of tag is read, the application no longer
+            //accepts input after the text is rendered. 
+
+            const TextFromGoogleDocs = node.attribs.id ? node.attribs.id.includes('docs') : false
+            
+            //check to see if the text is from Google docs as the nodesd are defined differently
+            //namely, the node's attribs value is an ID for the google doc. 
+            //we need to determine on the first pass of the function if the node is of google docs origin
+            //and if so, we know to look for its font properties pertainning to italics and boldness 
+            
+         
+            if(TextFromGoogleDocs){
+                // console.log("google node:", node)
+                // console.log("in the google logic")
+           
+                const styleForBold = node.children[0].attribs.style
+                const styleForItalics =  node.children[0].children[0].parent.attribs.style
+                
+                const BoldStartIndex = styleForBold.indexOf('font-weight: ')
+                const fontWeight = styleForBold.slice(BoldStartIndex+13, BoldStartIndex+16)
+               
+                const isGoogleFontBold = Number(fontWeight) > 599 ? true : false
+                const isGoogleFontItalic = styleForItalics.includes("italic")
+
+                //we can search the two differnt style properties for boldness and italics and then
+                //continue on with the recursive calls. After the data is first logged,
+                //the nodes will be defined in manor with the text organically generated in the editor
+                //see line 96
+              
+                 if(isGoogleFontItalic, !isGoogleFontBold){
+
+                    parsed = parsed.concat(parseNodes(children, "italic"))
+
+                } else if (!isGoogleFontItalic && isGoogleFontBold){
+
+                    parsed = parsed.concat(parseNodes(children, "bold"))
+
+                }
+                 else if (isGoogleFontItalic && isGoogleFontBold) {
+
+                    parsed = parsed.concat(parseNodes(children, "bold-italic"))
+                
+                } else {
+
+                 parsed = parsed.concat(parseNodes(children, "normal"))
+
+                }
+         } else {
+      
+                const { style } = attribs
+                if(style){
+                    //here we check to see if the text was organically created in the editor 
+                    //The google nodes once parsed through the above code will now be interpretted correctly
+                    //by the below logic. 
+                    //We can now properly chian the nodes and ensure that entered text does not break the "parsed" chain 
+                    //esnuring that anything pasted from any source will be logged 
+                    
+                    const isItalic = !!style.match(/italic/);
+                    //after parsing google Doc nodes, regex for weight check no longer working, 
+                    //needed to manually grab the actual value by slicing through the "style" string
+                    const BoldStartIndex = style.indexOf('font-weight: ')
+                    const fontWeight = style.slice(BoldStartIndex+13, BoldStartIndex+16)
+                    const isBold = Number(fontWeight) > 599 ? true : false
+      
+                    console.log(isBold)
+
+                    if (isItalic && !isBold) {
+                        parsed = parsed.concat(parseNodes(children, "italic"));
+                    } else if (!isItalic && isBold) {
+                        parsed = parsed.concat(parseNodes(children, "bold"));
+                    } else if (isItalic && isBold) {
+                        parsed = parsed.concat(parseNodes(children, "bold-italic"));
+                    } else {
+                        parsed = parsed.concat(parseNodes(children, "normal"));
+                    }
+                
+                } else {
+                    //catch for the nodes that do not have a style
+                    //if the node does not have style values it will adhere to the styling of its parents
+                    //or defualt to normal 
+                    if (baseStyle === "italic") {
+                        parsed = parsed.concat(parseNodes(children, "italic"));
+                    } else if (baseStyle === "bold") {
+                        parsed = parsed.concat(parseNodes(children, "bold"));
+                    } else if (baseStyle === "bold-italic") {
+                        parsed = parsed.concat(parseNodes(children, "bold-italic"));
+                    } else {
+                        parsed = parsed.concat(parseNodes(children, "normal"));
+                    }
+
+                }
+
             }
         }
+        
     }
     return parsed;
 };
